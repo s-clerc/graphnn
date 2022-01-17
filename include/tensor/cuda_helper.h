@@ -90,16 +90,16 @@ inline double Cuda_Dot(cublasHandle_t& handle, int n, const double *x, const dou
 
 inline float Cuda_Norm2(cublasHandle_t& handle, int n, const float *x)
 {
-		float result;
-		cublasSnrm2(handle, n, x, 1, &result);
-		return result;
+                float result;
+                cublasSnrm2(handle, n, x, 1, &result);
+                return result;
 }
 
 inline double Cuda_Norm2(cublasHandle_t& handle, int n, const double *x)
 {
-		double result;
-		cublasDnrm2(handle, n, x, 1, &result);
-		return result;
+                double result;
+                cublasDnrm2(handle, n, x, 1, &result);
+                return result;
 }
 
 inline void Cuda_Amax(cublasHandle_t& handle, int n, const float *x, int* result)
@@ -114,26 +114,26 @@ inline void Cuda_Amax(cublasHandle_t& handle, int n, const double *x, int* resul
 
 inline float Cuda_Asum(cublasHandle_t& handle, int n, const float *x)
 {
-		float result;
-		cublasSasum(handle, n, x, 1, &result);
-		return result;
+                float result;
+                cublasSasum(handle, n, x, 1, &result);
+                return result;
 }
 
 inline double Cuda_Asum(cublasHandle_t& handle, int n, const double *x)
 {
-		double result;
-		cublasDasum(handle, n, x, 1, &result);
-		return result;
+                double result;
+                cublasDasum(handle, n, x, 1, &result);
+                return result;
 }
 
 inline void Cuda_Ger(cublasHandle_t& handle, int m, int n, const float* alpha, const float* x, const float* y, float* A)
 {
-		cublasSger(handle, m, n, alpha, x, 1, y, 1, A, m);
+                cublasSger(handle, m, n, alpha, x, 1, y, 1, A, m);
 }
 
 inline void Cuda_Ger(cublasHandle_t& handle, int m, int n, const double* alpha, const double* x, const double* y, double* A)
 {
-		cublasDger(handle, m, n, alpha, x, 1, y, 1, A, m);
+                cublasDger(handle, m, n, alpha, x, 1, y, 1, A, m);
 }
 
 inline void Cuda_GeMV(cublasHandle_t& handle, cublasOperation_t trans, 
@@ -155,59 +155,147 @@ inline void Cuda_GeMV(cublasHandle_t& handle, cublasOperation_t trans,
 }
 
 inline void Cuda_GeaM(cublasHandle_t& handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n,
-							const float* alpha, const float* A, int lda, const float* beta, const float* B, int ldb,  
-							float* C, int ldc)
+                                                        const float* alpha, const float* A, int lda, const float* beta, const float* B, int ldb,  
+                                                        float* C, int ldc)
 {
-		cublasSgeam(handle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
+                cublasSgeam(handle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
 }
 
 inline void Cuda_GeaM(cublasHandle_t& handle, cublasOperation_t transa, cublasOperation_t transb, int m, int n,
-							const double* alpha, const double* A, int lda, const double* beta, const double* B, int ldb, 
-							double* C, int ldc)
+                                                        const double* alpha, const double* A, int lda, const double* beta, const double* B, int ldb, 
+                                                        double* C, int ldc)
 {
-		cublasDgeam(handle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
+                cublasDgeam(handle, transa, transb, m, n, alpha, A, lda, beta, B, ldb, C, ldc);
 }
 
-inline void Cuda_CSRMM(cusparseHandle_t& handle, cusparseOperation_t transA, int m, int n, int k, int nnz, 
-                    const float *alpha, const float *csrValA, const int *csrRowPtrA, const int *csrColIndA, 
-                    const float *B, int ldb, const float *beta, float *C, int ldc)
+inline void Cuda_CSRMM(
+        cusparseHandle_t& handle,
+        cusparseOperation_t transA,
+        int m, int n, int k, int nnz, 
+        const float *alpha, 
+        const float *csrValA, 
+        const int *csrRowPtrA, 
+        const int *csrColIndA, 
+        const float *B, 
+        int ldb, 
+        const float *beta,
+        float *C, 
+        int ldc)
 {
-        cusparseMatDescr_t descrA;
-        cusparseCreateMatDescr(&descrA);
-        cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
-        cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
-        cusparseScsrmm(handle, transA, m, n, k, nnz, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, B, ldb, beta, C, ldc);
+        // cusparseMatDescr_t descrA;
+        // cusparseCreateMatDescr(&descrA);
+        // cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+        // cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
+        // cusparseScsrmm(handle, transA, m, n, k, nnz, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, B, ldb, beta, C, ldc);
+
+        // We will convert from the arrays to proper matrices
+        cusparseSpMatDescr_t matA;
+        cusparseCreateCsr(&matA, m, k, nnz, const_cast<int *>(csrRowPtrA),
+                          const_cast<int *>(csrColIndA),
+                          const_cast<float *>(csrValA),
+                          CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+
+        cusparseDnMatDescr_t matB, matC;
+        cusparseCreateDnMat(&matB, k, n, ldb, const_cast<float *>(B), CUDA_R_32F, CUSPARSE_ORDER_COL);
+        cusparseCreateDnMat(&matC, m, n, ldc, C, CUDA_R_32F, CUSPARSE_ORDER_COL);
+
+        // Prepare the buffer
+        void *externalBuffer = NULL;
+        size_t bufferSize = 0;
+        cusparseSpMM_bufferSize(handle, transA, CUSPARSE_OPERATION_NON_TRANSPOSE, alpha,
+                                matA, matB, beta, matC, CUDA_R_32F,
+                                CUSPARSE_MM_ALG_DEFAULT, &bufferSize);
+        cudaMalloc(&externalBuffer, bufferSize);
+
+        // Perform the multiplication
+        cusparseSpMM(
+                handle,                           // handle
+                transA,                           // opA
+                CUSPARSE_OPERATION_NON_TRANSPOSE, // opB
+                alpha,                            // alpha
+                matA,                             // matA
+                matB,                             // matB
+                beta,                             // beta
+                matC,                             // matC
+                CUDA_R_32F,                       // computeType
+                CUSPARSE_MM_ALG_DEFAULT,          // alg
+                externalBuffer                    // externalBuffer
+        );
 }
 
-inline void Cuda_CSRMM(cusparseHandle_t& handle, cusparseOperation_t transA, int m, int n, int k, int nnz, 
-                    const double *alpha, const double *csrValA, const int *csrRowPtrA, const int *csrColIndA, 
-                    const double *B, int ldb, const double *beta, double *C, int ldc)
+inline void Cuda_CSRMM(
+        cusparseHandle_t& handle, 
+        cusparseOperation_t transA, 
+        int m, int n, int k, int nnz, 
+        const double *alpha,
+        const double *csrValA,
+        const int *csrRowPtrA,
+        const int *csrColIndA, 
+        const double *B,
+        int ldb,
+        const double *beta,
+        double *C, 
+        int ldc)
 {
-        cusparseMatDescr_t descrA;
-        cusparseCreateMatDescr(&descrA);
-        cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
-        cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
-        cusparseDcsrmm(handle, transA, m, n, k, nnz, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, B, ldb, beta, C, ldc);       
+        // cusparseMatDescr_t descrA;
+        // cusparseCreateMatDescr(&descrA);
+        // cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+        // cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
+        // cusparseDcsrmm(handle, transA, m, n, k, nnz, alpha, descrA, csrValA, csrRowPtrA, csrColIndA, B, ldb, beta, C, ldc);
+
+        // We will convert from the arrays to proper matrices
+        cusparseSpMatDescr_t matA;
+        cusparseCreateCsr(&matA, m, k, nnz, const_cast<int *>(csrRowPtrA),
+                          const_cast<int *>(csrColIndA),
+                          const_cast<double *>(csrValA),
+                          CUSPARSE_INDEX_64I, CUSPARSE_INDEX_64I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F);
+
+        cusparseDnMatDescr_t matB, matC;
+        cusparseCreateDnMat(&matB, k, n, ldb, const_cast<double *>(B), CUDA_R_64F, CUSPARSE_ORDER_COL);
+        cusparseCreateDnMat(&matC, m, n, ldc, C, CUDA_R_64F, CUSPARSE_ORDER_COL);
+
+        // Prepare the buffer
+        void *externalBuffer = NULL;
+        size_t bufferSize = 0;
+        cusparseSpMM_bufferSize(handle, transA, CUSPARSE_OPERATION_NON_TRANSPOSE, alpha,
+                                matA, matB, beta, matC, CUDA_R_64F,
+                                CUSPARSE_MM_ALG_DEFAULT, &bufferSize);
+        cudaMalloc(&externalBuffer, bufferSize);
+
+        // Perform the multiplication
+        cusparseSpMM(
+                handle,                           // handle
+                transA,                           // opA
+                CUSPARSE_OPERATION_NON_TRANSPOSE, // opB
+                alpha,                            // alpha
+                matA,                             // matA
+                matB,                             // matB
+                beta,                             // beta
+                matC,                             // matC
+                CUDA_R_64F,                       // computeType
+                CUSPARSE_MM_ALG_DEFAULT,          // alg
+                externalBuffer                    // externalBuffer
+        );
 }                    
 
 inline void Cuda_Axpy(cublasHandle_t& handle, int n, const float *alpha, const float *x, float *y)
 {
-		cublasSaxpy(handle, n, alpha, x, 1, y, 1);
+                cublasSaxpy(handle, n, alpha, x, 1, y, 1);
 }
 
 inline void Cuda_Axpy(cublasHandle_t& handle, int n, const double *alpha, const double *x, double *y)
 {
-		cublasDaxpy(handle, n, alpha, x, 1, y, 1);
+                cublasDaxpy(handle, n, alpha, x, 1, y, 1);
 }
 
 inline void Cuda_SetRandNormal(curandGenerator_t& generator, float* outputPtr, size_t n, float mean, float stddev)
 {
-		curandGenerateNormal(generator, outputPtr, n, mean, stddev);
+                curandGenerateNormal(generator, outputPtr, n, mean, stddev);
 }
 
 inline void Cuda_SetRandNormal(curandGenerator_t& generator, double* outputPtr, size_t n, double mean, double stddev)
 {
-		curandGenerateNormalDouble(generator, outputPtr, n, mean, stddev);
+                curandGenerateNormalDouble(generator, outputPtr, n, mean, stddev);
 }
 
 #endif

@@ -1,14 +1,22 @@
+#define __TBB_PREVIEW_MUTEXES 1
+//#define __TBB_cache_aligned_allocator_H 1
+//#define __TBB_flow_graph_H 1
+#define __TBB_mutex_H 1
 #include "tensor/cpu_row_sparse_tensor.h"
 #include "tensor/t_data.h"
 #include "tensor/cpu_dense_tensor.h"
 #include "tensor/cpu_sparse_tensor.h"
 #include "tensor/mkl_helper.h"
 #include "util/mem_holder.h"
-#include "tbb/tbb.h"
+//#include "tbb/tbb.h"
+//#include "oneapi/tbb/mutex.h"
+#include <tbb/mutex.h>
 #include <cstring>
 #include <cmath>
 #include <atomic>
 #include <cassert>
+
+//using namespace oneapi;
 
 namespace gnn 
 {
@@ -287,6 +295,7 @@ Dtype TensorTemplate<CPU, ROW_SPARSE, Dtype>::Norm2()
 		size_t dim = this->shape.Count(1);
 
 		Dtype total_norm = 0.0;
+		//using namespace tbb::detail::d1;
 		tbb::mutex ll;
 		tbb::parallel_for(size_t(0), row_cnt, size_t(1), [&](size_t i){
 			size_t row_idx = row_idxes.data->ptr[i];

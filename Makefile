@@ -6,7 +6,7 @@ else
     build_root = build_cpuonly
 endif
 
-include_dirs = $(CUDA_HOME)/include $(MKL_ROOT)/include $(TBB_ROOT)/include include
+include_dirs = $(CUDA_HOME)/include $(MKL_ROOT)/include /usr/include/tbb include
 CXXFLAGS += $(addprefix -I,$(include_dirs))
 CXXFLAGS += -fPIC
 
@@ -19,7 +19,7 @@ ifeq ($(USE_GPU), 1)
     CXXFLAGS += -DUSE_GPU
     NVCCFLAGS += -DUSE_GPU
     NVCCFLAGS += $(addprefix -I,$(include_dirs))
-    NVCCFLAGS += -std=c++11 --use_fast_math --compiler-options '-fPIC'
+    NVCCFLAGS += -std=c++14 --use_fast_math --compiler-options '-fPIC'
     cu_files = $(shell $(FIND) src/ -name "*.cu" -printf "%P\n")
     cu_obj_files = $(subst .cu,.o,$(cu_files))
     objs += $(addprefix $(obj_build_root)/cuda/,$(cu_obj_files))
@@ -51,7 +51,7 @@ endif
 
 $(obj_build_root)/cxx/%.o: src/%.cpp
 	$(dir_guard)
-	$(CXX) $(CXXFLAGS) -MMD -c -o $@ $(filter %.cpp, $^)
+	$(CXX) $(CXXFLAGS) -MMD -c -o $@ $(filter %.cpp, $^) $(LDFLAGS)
 
 .PHONY: test
 
@@ -60,7 +60,7 @@ test: $(test_build_root)/test_main
 
 $(test_build_root)/%.o: test/%.cpp
 	$(dir_guard)
-	$(CXX) $(CXXFLAGS) -MMD -c -o $@ $(filter %.cpp, $^)
+	$(CXX) $(CXXFLAGS) -MMD -c -o $@ $(filter %.cpp, $^) $(LDFLAGS)
 
 $(test_build_root)/test_main: test/test_main.cpp $(test_target) $(gnn_lib)
 	$(dir_guard)

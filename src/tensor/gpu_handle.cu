@@ -16,7 +16,13 @@ __global__ void SetupRandKernel(curandState_t *state, unsigned long long seed)
 
 void GpuHandle::Init(int dev_id, unsigned int _streamcnt)
 {
-	tbb::task_scheduler_init init(4);
+	// My understanding is that according to https://github.com/DrTimothyAldenDavis/SuiteSparse/issues/72
+	// in modern oneTBB, excluding the line below means that the system will automatically allocate threads
+	// and since it is fixed to a constant, I don't think it does anything very important wrt to the other
+	// libraries being used.
+	// If needed, we could use https://oneapi-src.github.io/oneTBB/main/tbb_userguide/Migration_Guide/Task_Scheduler_Init.html
+	// 's max concurrency to limit it to 4 I believe.
+	//tbb::task_scheduler_init init(4);
 	streamcnt = _streamcnt;
 	cudaDeviceReset();
 	cudaSetDevice(dev_id);
