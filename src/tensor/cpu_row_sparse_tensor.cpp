@@ -8,15 +8,15 @@
 #include "tensor/cpu_sparse_tensor.h"
 #include "tensor/mkl_helper.h"
 #include "util/mem_holder.h"
-//#include "tbb/tbb.h"
-//#include "oneapi/tbb/mutex.h"
-#include <tbb/mutex.h>
+#include <oneapi/tbb.h>
+#include <oneapi/tbb/mutex.h>
+//#include <tbb/mutex.h>
 #include <cstring>
 #include <cmath>
 #include <atomic>
 #include <cassert>
 
-//using namespace oneapi;
+using namespace oneapi;
 
 namespace gnn 
 {
@@ -296,7 +296,7 @@ Dtype TensorTemplate<CPU, ROW_SPARSE, Dtype>::Norm2()
 
 		Dtype total_norm = 0.0;
 		//using namespace tbb::detail::d1;
-		tbb::mutex ll;
+		std::mutex ll;
 		tbb::parallel_for(size_t(0), row_cnt, size_t(1), [&](size_t i){
 			size_t row_idx = row_idxes.data->ptr[i];
 			auto norm = MKL_Norm2(dim, data->ptr + row_idx * dim);
