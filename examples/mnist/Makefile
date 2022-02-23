@@ -12,14 +12,14 @@ endif
 
 gnn_lib := $(lib_dir)/libgnn.a
 
-include_dirs := $(CUDA_HOME)/include $(MKL_ROOT)/include $(GNN_HOME)/include include
+include_dirs := $(CUDA_HOME)/include $(MKL_ROOT)/include $(TBB_ROOT)/include $(GNN_HOME)/include include
 CXXFLAGS += $(addprefix -I,$(include_dirs))
 
 all: build/mnist
 
 build/mnist: mnist.cpp $(gnn_lib)
 	$(dir_guard)
-	$(CXX) $(CXXFLAGS) -o $@ $^ -L$(lib_dir) -lgnn $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) -L$(lib_dir) -lgnn 
 
 clean:
 	rm -rf build

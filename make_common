@@ -1,0 +1,20 @@
+dir_guard = @mkdir -p $(@D)
+
+INTEL_ROOT := ~/intel/oneapi
+MKL_ROOT = $(INTEL_ROOT)/mkl/latest
+TBB_ROOT = $(INTEL_ROOT)/tbb/latest
+USE_GPU = 1
+
+
+FIND := find
+CXX := g++
+CXXFLAGS += -Wall -O3 -std=c++14
+LDFLAGS += -lm -lmkl_rt -ltbb -L$(TBB_ROOT)/lib/intel64/gcc4.8/
+ifeq ($(USE_GPU), 1)
+    #CUDA_HOME := /usr/local/cuda-8.0
+    NVCC := $(CUDA_HOME)/bin/nvcc
+    NVCCFLAGS += --default-stream per-thread
+    LDFLAGS += -L$(CUDA_HOME)/lib64 -lcudart -lcublas -lcurand -lcusparse 
+endif
+
+CUDA_ARCH := -gencode arch=compute_61,code=sm_61 
